@@ -13,3 +13,7 @@
 - [x] Theme colors (warm, child-friendly palette)
 - [x] App logo and branding
 - [x] Local data persistence with AsyncStorage
+
+## Branding Updates
+- [x] Update app icon with user-provided MathFuel logo
+- [x] Update color scheme to match blue/green theme
