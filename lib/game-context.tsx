@@ -34,7 +34,8 @@ const defaultProgress: ProgressData = {
   sessionHistory: [],
   badges: [],
   difficultyLevel: 1,
-  crossingTenAccuracy: 0,
+  crossingTenCorrect: 0,
+  crossingTenTotal: 0,
 };
 
 const defaultSettings: GameSettings = {
@@ -87,14 +88,22 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
     // Update progress
     let newProgress = updateStreak(progress);
+    
+    // Calculate crossing-ten accuracy for this session
+    const crossingTenAccuracy = result.crossingTenTotal > 0 
+      ? Math.round((result.crossingTenCorrect / result.crossingTenTotal) * 100)
+      : undefined;
+    
     newProgress = {
       ...newProgress,
       totalStars: newProgress.totalStars + starsEarned,
       totalSessions: newProgress.totalSessions + 1,
       totalProblems: newProgress.totalProblems + result.totalProblems,
       totalCorrect: newProgress.totalCorrect + result.correctAnswers,
+      crossingTenCorrect: newProgress.crossingTenCorrect + (result.crossingTenCorrect || 0),
+      crossingTenTotal: newProgress.crossingTenTotal + (result.crossingTenTotal || 0),
       sessionHistory: [sessionResult, ...newProgress.sessionHistory].slice(0, 30), // Keep last 30 sessions
-      difficultyLevel: adjustDifficulty(newProgress, result.accuracy),
+      difficultyLevel: adjustDifficulty(newProgress, result.accuracy, crossingTenAccuracy),
     };
 
     // Check for new badges

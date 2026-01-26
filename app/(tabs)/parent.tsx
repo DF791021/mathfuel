@@ -3,6 +3,7 @@ import { Text, View, ScrollView, TouchableOpacity, TextInput, StyleSheet, Platfo
 import { ScreenContainer } from "@/components/screen-container";
 import { useGame } from "@/lib/game-context";
 import { useColors } from "@/hooks/use-colors";
+import { getCrossingTenAccuracy, ProgressData, GameSettings, SessionResult } from "@/lib/game-store";
 import * as Haptics from "expo-haptics";
 
 type TabType = "dashboard" | "settings";
@@ -108,6 +109,7 @@ export default function ParentScreen() {
   const totalTimeMinutes = Math.round(
     recentSessions.reduce((sum, s) => sum + (s.averageTime * s.totalProblems), 0) / 60000
   );
+  const crossingTenAccuracy = getCrossingTenAccuracy(progress);
 
   return (
     <ScreenContainer className="px-6">
@@ -154,6 +156,7 @@ export default function ParentScreen() {
             progress={progress} 
             avgAccuracy={avgAccuracy}
             totalTimeMinutes={totalTimeMinutes}
+            crossingTenAccuracy={crossingTenAccuracy}
             recentSessions={recentSessions}
             colors={colors}
           />
@@ -182,7 +185,16 @@ export default function ParentScreen() {
   );
 }
 
-function DashboardContent({ progress, avgAccuracy, totalTimeMinutes, recentSessions, colors }: any) {
+interface DashboardContentProps {
+  progress: ProgressData;
+  avgAccuracy: number;
+  totalTimeMinutes: number;
+  crossingTenAccuracy: number;
+  recentSessions: SessionResult[];
+  colors: ReturnType<typeof useColors>;
+}
+
+function DashboardContent({ progress, avgAccuracy, crossingTenAccuracy, recentSessions, colors }: DashboardContentProps) {
   return (
     <View className="gap-6">
       {/* Overview Cards */}
@@ -228,6 +240,45 @@ function DashboardContent({ progress, avgAccuracy, totalTimeMinutes, recentSessi
         </View>
       </View>
 
+      {/* Crossing Ten Skill Tracking */}
+      {progress.crossingTenTotal > 0 && (
+        <View>
+          <Text className="text-xl font-bold text-foreground mb-4">Key Skill: Crossing Ten</Text>
+          <View 
+            className="bg-surface rounded-xl p-4"
+            style={{ borderColor: colors.border, borderWidth: 1 }}
+          >
+            <View className="flex-row items-center justify-between mb-3">
+              <View>
+                <Text className="font-medium text-foreground">Accuracy</Text>
+                <Text className="text-xs text-muted">
+                  {progress.crossingTenCorrect}/{progress.crossingTenTotal} correct
+                </Text>
+              </View>
+              <Text style={[styles.cardValue, { 
+                color: crossingTenAccuracy >= 70 ? colors.success : 
+                       crossingTenAccuracy >= 50 ? colors.warning : colors.error 
+              }]}>
+                {crossingTenAccuracy}%
+              </Text>
+            </View>
+            <View className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: colors.border }}>
+              <View 
+                className="h-full rounded-full"
+                style={{ 
+                  width: `${crossingTenAccuracy}%`,
+                  backgroundColor: crossingTenAccuracy >= 70 ? colors.success : 
+                                   crossingTenAccuracy >= 50 ? colors.warning : colors.error
+                }}
+              />
+            </View>
+            <Text className="text-xs text-muted mt-2">
+              "Crossing ten" (e.g., 7+5=12) is a key 1st grade skill. This tracks how well your child handles these problems.
+            </Text>
+          </View>
+        </View>
+      )}
+
       {/* AI Insights */}
       <View>
         <Text className="text-xl font-bold text-foreground mb-4">AI Insights</Text>
@@ -243,17 +294,9 @@ function DashboardContent({ progress, avgAccuracy, totalTimeMinutes, recentSessi
                 <Text className="text-sm text-muted leading-5">
                   No sessions completed yet. Once your child starts practicing, we'll provide personalized insights about their learning patterns and progress.
                 </Text>
-              ) : avgAccuracy >= 80 ? (
-                <Text className="text-sm text-muted leading-5">
-                  Excellent progress! Your child is performing well with {avgAccuracy}% accuracy. They're ready for more challenging problems. The system will gradually increase difficulty to keep them engaged.
-                </Text>
-              ) : avgAccuracy >= 60 ? (
-                <Text className="text-sm text-muted leading-5">
-                  Good progress! Your child is building confidence with {avgAccuracy}% accuracy. The system is providing visual aids to reinforce concepts. Consider encouraging daily practice for best results.
-                </Text>
               ) : (
                 <Text className="text-sm text-muted leading-5">
-                  Your child is working through foundational concepts. The system has adjusted to provide more visual support and easier problems. Encouragement and consistent practice will help build confidence.
+                  {generateInsight(progress, avgAccuracy, crossingTenAccuracy)}
                 </Text>
               )}
             </View>
@@ -276,7 +319,7 @@ function DashboardContent({ progress, avgAccuracy, totalTimeMinutes, recentSessi
           </View>
         ) : (
           <View className="gap-2">
-            {recentSessions.map((session: any, index: number) => (
+            {recentSessions.map((session, index) => (
               <View
                 key={index}
                 className="flex-row items-center justify-between bg-surface rounded-xl p-4"
@@ -316,7 +359,56 @@ function DashboardContent({ progress, avgAccuracy, totalTimeMinutes, recentSessi
   );
 }
 
-function SettingsContent({ settings, updateSettings, resetProgress, colors }: any) {
+function generateInsight(progress: ProgressData, avgAccuracy: number, crossingTenAccuracy: number): string {
+  const insights: string[] = [];
+  
+  // Overall performance
+  if (avgAccuracy >= 85) {
+    insights.push(`Excellent progress! Your child is performing well with ${avgAccuracy}% accuracy.`);
+  } else if (avgAccuracy >= 70) {
+    insights.push(`Good progress! Your child is building confidence with ${avgAccuracy}% accuracy.`);
+  } else if (avgAccuracy >= 50) {
+    insights.push(`Your child is working through foundational concepts with ${avgAccuracy}% accuracy.`);
+  } else {
+    insights.push(`Your child is in the early learning phase. The system is providing extra visual support.`);
+  }
+  
+  // Crossing-ten specific insight
+  if (progress.crossingTenTotal >= 5) {
+    if (crossingTenAccuracy >= 80) {
+      insights.push(`They're mastering "crossing ten" problems (${crossingTenAccuracy}% accuracy) - a key 1st grade skill!`);
+    } else if (crossingTenAccuracy >= 50) {
+      insights.push(`"Crossing ten" problems (like 7+5) need more practice (${crossingTenAccuracy}% accuracy). The system will provide more visual aids for these.`);
+    } else {
+      insights.push(`"Crossing ten" problems are challenging right now (${crossingTenAccuracy}% accuracy). Consider using physical objects at home to practice.`);
+    }
+  }
+  
+  // Streak encouragement
+  if (progress.currentStreak >= 7) {
+    insights.push(`Amazing ${progress.currentStreak}-day streak! Consistency is building strong math foundations.`);
+  } else if (progress.currentStreak >= 3) {
+    insights.push(`Great ${progress.currentStreak}-day streak! Keep the momentum going.`);
+  }
+  
+  // Difficulty adjustment
+  if (progress.difficultyLevel >= 4) {
+    insights.push(`They're ready for advanced problems at Level ${progress.difficultyLevel}.`);
+  } else if (progress.difficultyLevel === 1 && progress.totalSessions > 3) {
+    insights.push(`The system is keeping problems simple to build confidence before advancing.`);
+  }
+  
+  return insights.join(" ");
+}
+
+interface SettingsContentProps {
+  settings: GameSettings;
+  updateSettings: (updates: Partial<GameSettings>) => Promise<void>;
+  resetProgress: () => Promise<void>;
+  colors: ReturnType<typeof useColors>;
+}
+
+function SettingsContent({ settings, updateSettings, resetProgress, colors }: SettingsContentProps) {
   const [newPin, setNewPin] = useState("");
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
@@ -355,7 +447,7 @@ function SettingsContent({ settings, updateSettings, resetProgress, colors }: an
                 {settings.sessionLength}
               </Text>
               <TouchableOpacity
-                onPress={() => updateSettings({ sessionLength: Math.min(20, settings.sessionLength + 5) })}
+                onPress={() => updateSettings({ sessionLength: Math.min(30, settings.sessionLength + 5) })}
                 style={[styles.adjustButton, { backgroundColor: colors.surface, borderColor: colors.border }]}
               >
                 <Text className="text-lg text-foreground">+</Text>

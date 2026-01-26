@@ -12,13 +12,18 @@ import Animated, {
   withSequence,
   withTiming,
   withSpring,
-  runOnJS,
 } from "react-native-reanimated";
+
+interface AnswerRecord {
+  correct: boolean;
+  timeMs: number;
+  isCrossingTen: boolean;
+}
 
 interface SessionState {
   currentProblemIndex: number;
   problems: MathProblem[];
-  answers: { correct: boolean; timeMs: number }[];
+  answers: AnswerRecord[];
   startTime: number;
 }
 
@@ -34,7 +39,6 @@ export default function PracticeScreen() {
   const [problemStartTime, setProblemStartTime] = useState(Date.now());
 
   const feedbackScale = useSharedValue(0);
-  const optionScales = [useSharedValue(1), useSharedValue(1), useSharedValue(1), useSharedValue(1)];
 
   // Initialize session
   useEffect(() => {
@@ -51,7 +55,7 @@ export default function PracticeScreen() {
     setProblemStartTime(Date.now());
   }, [settings.sessionLength, progress.difficultyLevel]);
 
-  const handleAnswer = useCallback((answer: number, optionIndex: number) => {
+  const handleAnswer = useCallback((answer: number) => {
     if (!session || showFeedback) return;
 
     const currentProblem = session.problems[session.currentProblemIndex];
@@ -61,12 +65,6 @@ export default function PracticeScreen() {
     setSelectedAnswer(answer);
     setIsCorrect(correct);
     setShowFeedback(true);
-
-    // Animate the selected option
-    optionScales[optionIndex].value = withSequence(
-      withTiming(0.9, { duration: 80 }),
-      withSpring(1, { damping: 15 })
-    );
 
     // Show feedback animation
     feedbackScale.value = withSequence(
@@ -84,7 +82,10 @@ export default function PracticeScreen() {
     }
 
     // Update session and move to next problem
-    const newAnswers = [...session.answers, { correct, timeMs }];
+    const newAnswers: AnswerRecord[] = [
+      ...session.answers, 
+      { correct, timeMs, isCrossingTen: currentProblem.isCrossingTen }
+    ];
     
     setTimeout(() => {
       setShowFeedback(false);
@@ -93,7 +94,7 @@ export default function PracticeScreen() {
 
       if (session.currentProblemIndex + 1 >= session.problems.length) {
         // Session complete
-        finishSession(newAnswers);
+        finishSession(newAnswers, session.problems);
       } else {
         setSession({
           ...session,
@@ -103,16 +104,23 @@ export default function PracticeScreen() {
         setProblemStartTime(Date.now());
       }
     }, correct ? 800 : 1200);
-  }, [session, showFeedback, problemStartTime, settings.hapticEnabled]);
+  }, [session, showFeedback, problemStartTime, settings.hapticEnabled, feedbackScale]);
 
-  const finishSession = async (answers: { correct: boolean; timeMs: number }[]) => {
+  const finishSession = async (answers: AnswerRecord[], problems: MathProblem[]) => {
     const correctAnswers = answers.filter(a => a.correct).length;
     const totalProblems = answers.length;
-    const accuracy = Math.round((correctAnswers / totalProblems) * 100);
-    const averageTime = Math.round(answers.reduce((sum, a) => sum + a.timeMs, 0) / totalProblems);
+    const accuracy = totalProblems > 0 ? Math.round((correctAnswers / totalProblems) * 100) : 0;
+    const averageTime = totalProblems > 0 
+      ? Math.round(answers.reduce((sum, a) => sum + a.timeMs, 0) / totalProblems)
+      : 0;
 
-    const additionCount = session?.problems.filter(p => p.operator === "+").length || 0;
-    const subtractionCount = session?.problems.filter(p => p.operator === "-").length || 0;
+    const additionCount = problems.filter(p => p.operator === "+").length;
+    const subtractionCount = problems.filter(p => p.operator === "-").length;
+
+    // Calculate crossing-ten stats
+    const crossingTenAnswers = answers.filter(a => a.isCrossingTen);
+    const crossingTenCorrect = crossingTenAnswers.filter(a => a.correct).length;
+    const crossingTenTotal = crossingTenAnswers.length;
 
     const result = await completeSession({
       totalProblems,
@@ -120,6 +128,8 @@ export default function PracticeScreen() {
       accuracy,
       averageTime,
       problemTypes: { addition: additionCount, subtraction: subtractionCount },
+      crossingTenCorrect,
+      crossingTenTotal,
     });
 
     router.replace({
@@ -245,30 +255,29 @@ export default function PracticeScreen() {
             }
 
             return (
-              <Animated.View key={index}>
-                <TouchableOpacity
-                  onPress={() => handleAnswer(option, index)}
-                  disabled={showFeedback}
+              <TouchableOpacity
+                key={`option-${index}-${option}`}
+                onPress={() => handleAnswer(option)}
+                disabled={showFeedback}
+                style={[
+                  styles.optionButton,
+                  { 
+                    backgroundColor: bgColor,
+                    borderColor: isSelected ? colors.primary : colors.border,
+                    borderWidth: isSelected ? 3 : 1,
+                  }
+                ]}
+                activeOpacity={0.8}
+              >
+                <Text 
                   style={[
-                    styles.optionButton,
-                    { 
-                      backgroundColor: bgColor,
-                      borderColor: isSelected ? colors.primary : colors.border,
-                      borderWidth: isSelected ? 3 : 1,
-                    }
+                    styles.optionText,
+                    { color: showFeedback && (isCorrectOption || isSelected) ? "#FFFFFF" : colors.foreground }
                   ]}
-                  activeOpacity={0.8}
                 >
-                  <Text 
-                    style={[
-                      styles.optionText,
-                      { color: showFeedback && (isCorrectOption || isSelected) ? "#FFFFFF" : colors.foreground }
-                    ]}
-                  >
-                    {option}
-                  </Text>
-                </TouchableOpacity>
-              </Animated.View>
+                  {option}
+                </Text>
+              </TouchableOpacity>
             );
           })}
         </View>
