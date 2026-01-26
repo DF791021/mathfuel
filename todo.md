@@ -90,3 +90,11 @@
 - [x] Display session stats (accuracy, problems solved, time) on child detail
 - [x] Show crossing-ten accuracy from real session data
 - [x] Calculate and display progress trends from session history
+
+## Sound Effects
+- [x] Download/create correct answer sound (cheerful ding)
+- [x] Download/create incorrect answer sound (gentle buzz)
+- [x] Download/create celebration sound for session completion
+- [x] Integrate sounds into practice screen
+- [x] Add celebration sound to results screen
+- [x] Respect soundEnabled setting from user preferences

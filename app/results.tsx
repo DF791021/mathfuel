@@ -5,6 +5,7 @@ import { useColors } from "@/hooks/use-colors";
 import { getBadgeInfo } from "@/lib/game-store";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
+import { useSounds } from "@/hooks/use-sounds";
 import { useEffect } from "react";
 import Animated, {
   useAnimatedStyle,
@@ -31,6 +32,7 @@ export default function ResultsScreen() {
     newBadges: string;
   }>();
   const colors = useColors();
+  const { playCelebration } = useSounds();
 
   const stars = parseInt(params.stars || "0");
   const accuracy = parseInt(params.accuracy || "0");
@@ -80,6 +82,9 @@ export default function ResultsScreen() {
     if (Platform.OS !== "web") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
+
+    // Play celebration sound
+    playCelebration();
   }, []);
 
   const celebrationStyle = useAnimatedStyle(() => ({

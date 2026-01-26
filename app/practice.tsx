@@ -7,6 +7,7 @@ import { useColors } from "@/hooks/use-colors";
 import { generateProblem, MathProblem } from "@/lib/game-store";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
+import { useSounds } from "@/hooks/use-sounds";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -58,6 +59,9 @@ export default function PracticeScreen() {
   const [isCorrect, setIsCorrect] = useState(false);
   const [problemStartTime, setProblemStartTime] = useState(Date.now());
   const [streak, setStreak] = useState(0);
+
+  // Sound effects
+  const { playCorrect, playIncorrect } = useSounds({ enabled: settings.soundEnabled });
 
   // Animation values
   const feedbackScale = useSharedValue(0);
@@ -139,6 +143,13 @@ export default function PracticeScreen() {
       } else {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       }
+    }
+
+    // Sound effects
+    if (correct) {
+      playCorrect();
+    } else {
+      playIncorrect();
     }
 
     // Update session and move to next problem
