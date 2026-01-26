@@ -1,118 +1,79 @@
-import { Text, View, TouchableOpacity, StyleSheet } from "react-native";
+import { Text, View, TouchableOpacity, StyleSheet, Platform } from "react-native";
 import { useRouter } from "expo-router";
 import { ScreenContainer } from "@/components/screen-container";
-import { useGame } from "@/lib/game-context";
 import { useColors } from "@/hooks/use-colors";
 import * as Haptics from "expo-haptics";
-import { Platform } from "react-native";
-import Animated, { 
-  useAnimatedStyle, 
-  useSharedValue, 
-  withSpring,
-  withSequence,
-  withTiming,
-} from "react-native-reanimated";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { progress, isLoading } = useGame();
   const colors = useColors();
-  const buttonScale = useSharedValue(1);
 
-  const handlePlayPress = () => {
+  const handleStudentPress = () => {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     }
-    buttonScale.value = withSequence(
-      withTiming(0.95, { duration: 80 }),
-      withSpring(1, { damping: 15 })
-    );
-    router.push("/practice");
+    router.push("/student" as any);
   };
 
-  const animatedButtonStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: buttonScale.value }],
-  }));
-
-  if (isLoading) {
-    return (
-      <ScreenContainer className="items-center justify-center">
-        <Text className="text-xl text-muted">Loading...</Text>
-      </ScreenContainer>
-    );
-  }
-
-  const todayStars = progress.sessionHistory.length > 0 && 
-    new Date(progress.sessionHistory[0].date).toDateString() === new Date().toDateString()
-      ? progress.sessionHistory[0].starsEarned
-      : 0;
+  const handleParentPress = () => {
+    if (Platform.OS !== "web") {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    }
+    router.push("/login");
+  };
 
   return (
     <ScreenContainer className="px-6">
-      <View className="flex-1 justify-between py-8">
-        {/* Header with streak */}
-        <View className="items-center gap-2">
-          <View className="flex-row items-center gap-2 bg-surface px-4 py-2 rounded-full">
-            <Text style={styles.fireEmoji}>🔥</Text>
-            <Text className="text-lg font-semibold text-foreground">
-              {progress.currentStreak} Day Streak
-            </Text>
-          </View>
-        </View>
-
-        {/* Main content */}
-        <View className="items-center gap-8">
-          {/* Mascot/Logo area */}
+      <View className="flex-1 justify-center items-center gap-8">
+        {/* Logo */}
+        <View className="items-center gap-4 mb-8">
           <View 
-            className="w-32 h-32 rounded-full items-center justify-center"
+            className="w-28 h-28 rounded-3xl items-center justify-center"
             style={{ backgroundColor: colors.primary + "20" }}
           >
-            <Text style={styles.mascotEmoji}>🧮</Text>
+            <Text style={styles.logo}>🚀</Text>
           </View>
-
-          {/* Welcome message */}
-          <View className="items-center gap-2">
-            <Text className="text-3xl font-bold text-foreground text-center">
-              Ready to Learn?
-            </Text>
-            <Text className="text-base text-muted text-center px-8">
-              Practice math with fun visual problems!
-            </Text>
-          </View>
-
-          {/* Stats row */}
-          <View className="flex-row gap-6">
-            <View className="items-center bg-surface px-5 py-3 rounded-2xl">
-              <Text style={styles.starEmoji}>⭐</Text>
-              <Text className="text-2xl font-bold text-foreground">{progress.totalStars}</Text>
-              <Text className="text-xs text-muted">Total Stars</Text>
-            </View>
-            <View className="items-center bg-surface px-5 py-3 rounded-2xl">
-              <Text style={styles.starEmoji}>✨</Text>
-              <Text className="text-2xl font-bold text-foreground">{todayStars}</Text>
-              <Text className="text-xs text-muted">Today</Text>
-            </View>
-            <View className="items-center bg-surface px-5 py-3 rounded-2xl">
-              <Text style={styles.starEmoji}>🏆</Text>
-              <Text className="text-2xl font-bold text-foreground">{progress.badges.length}</Text>
-              <Text className="text-xs text-muted">Badges</Text>
-            </View>
-          </View>
+          <Text className="text-4xl font-bold text-foreground">MathFuel</Text>
+          <Text className="text-base text-muted text-center">
+            Adaptive Math Learning for 1st Grade
+          </Text>
         </View>
 
-        {/* Play button */}
-        <View className="items-center pb-4">
-          <Animated.View style={animatedButtonStyle}>
-            <TouchableOpacity
-              onPress={handlePlayPress}
-              activeOpacity={0.9}
-              style={[styles.playButton, { backgroundColor: colors.primary }]}
-            >
-              <Text style={styles.playButtonText}>Play Now</Text>
-            </TouchableOpacity>
-          </Animated.View>
-          <Text className="text-sm text-muted mt-3">
-            Level {progress.difficultyLevel} • {progress.totalSessions} sessions completed
+        {/* Role Selection */}
+        <View className="w-full max-w-sm gap-4">
+          {/* Student Button - Primary */}
+          <TouchableOpacity
+            onPress={handleStudentPress}
+            style={[styles.roleButton, { backgroundColor: colors.primary }]}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.roleEmoji}>🎒</Text>
+            <View className="flex-1">
+              <Text style={styles.roleTitle}>I'm a Student</Text>
+              <Text style={styles.roleSubtitle}>Start practicing math</Text>
+            </View>
+            <Text style={styles.arrow}>→</Text>
+          </TouchableOpacity>
+
+          {/* Parent/Teacher Button - Secondary */}
+          <TouchableOpacity
+            onPress={handleParentPress}
+            style={[styles.roleButton, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.roleEmoji}>👨‍👩‍👧</Text>
+            <View className="flex-1">
+              <Text style={[styles.roleTitle, { color: colors.foreground }]}>Parent / Teacher</Text>
+              <Text style={[styles.roleSubtitle, { color: colors.muted }]}>Manage students & view progress</Text>
+            </View>
+            <Text style={[styles.arrow, { color: colors.muted }]}>→</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Footer */}
+        <View className="items-center mt-8">
+          <Text className="text-xs text-muted text-center">
+            Powered by adaptive AI learning
           </Text>
         </View>
       </View>
@@ -121,29 +82,32 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  fireEmoji: {
-    fontSize: 20,
+  logo: {
+    fontSize: 56,
   },
-  mascotEmoji: {
-    fontSize: 64,
+  roleButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 20,
+    borderRadius: 16,
+    gap: 16,
   },
-  starEmoji: {
-    fontSize: 24,
-    marginBottom: 4,
+  roleEmoji: {
+    fontSize: 32,
   },
-  playButton: {
-    paddingHorizontal: 48,
-    paddingVertical: 18,
-    borderRadius: 32,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-  },
-  playButtonText: {
+  roleTitle: {
     color: "#FFFFFF",
-    fontSize: 22,
-    fontWeight: "700",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  roleSubtitle: {
+    color: "rgba(255,255,255,0.8)",
+    fontSize: 13,
+    marginTop: 2,
+  },
+  arrow: {
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontWeight: "600",
   },
 });

@@ -29,3 +29,45 @@
 - [x] Write comprehensive unit tests for all core logic
 - [x] Test edge cases for streak calculation
 - [x] Test badge awarding logic thoroughly
+
+## Phase 1: Multi-Child / Admin Portal System
+### Authentication
+- [x] Admin login via OAuth
+- [x] Student profile selection (icon-based)
+- [x] Optional 4-digit PIN for students
+
+### Admin Dashboard
+- [x] "My Students" primary screen
+- [x] Big "Add Child" button
+- [x] Child cards showing: Name, Grade, Last activity, Progress indicator
+- [x] Add Child flow: First name, Grade dropdown, Avatar, Optional PIN
+
+### Student Experience (Ultra Simple)
+- [x] Landing page with role selection (Student vs Parent/Teacher)
+- [x] Student profile selection screen
+- [x] Single "Start Math" button on student home
+- [x] Track: correctness, time to answer, crossing-ten problems
+
+### Data Structure
+- [x] Database schema for children and sessions tables
+- [x] Server API routes for children CRUD
+- [x] Server API routes for session recording
+- [x] Child profile: ID, Grade, Learning history, Session history
+- [x] Link children to admin account
+
+### Child Detail Screen
+- [x] View child progress and stats
+- [x] Edit child name, grade, avatar, PIN
+- [x] Delete child with confirmation
+- [x] View recent session history
+- [x] Crossing-ten accuracy tracking
+
+### NOT Building Yet (Explicit)
+- Face/visual login
+- AI chat interfaces
+- Teacher district hierarchy
+- Benchmark comparisons
+- Advanced dashboards
+- Multiple grade switching
+- ACT integration
+

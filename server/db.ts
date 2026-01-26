@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, children, sessions, InsertChild, InsertSession, Child, Session } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,163 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+// ==================== CHILDREN QUERIES ====================
+
+export async function getChildrenByAdminId(adminId: number): Promise<Child[]> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get children: database not available");
+    return [];
+  }
+  
+  return db.select().from(children).where(eq(children.adminId, adminId));
+}
+
+export async function getChildById(childId: number): Promise<Child | undefined> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get child: database not available");
+    return undefined;
+  }
+  
+  const result = await db.select().from(children).where(eq(children.id, childId)).limit(1);
+  return result.length > 0 ? result[0] : undefined;
+}
+
+export async function createChild(data: InsertChild): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(children).values(data);
+  return Number(result[0].insertId);
+}
+
+export async function updateChild(childId: number, data: Partial<InsertChild>): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  await db.update(children).set(data).where(eq(children.id, childId));
+}
+
+export async function deleteChild(childId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  // Delete all sessions for this child first
+  await db.delete(sessions).where(eq(sessions.childId, childId));
+  // Then delete the child
+  await db.delete(children).where(eq(children.id, childId));
+}
+
+// ==================== SESSION QUERIES ====================
+
+export async function getSessionsByChildId(childId: number, limit = 50): Promise<Session[]> {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get sessions: database not available");
+    return [];
+  }
+  
+  return db.select()
+    .from(sessions)
+    .where(eq(sessions.childId, childId))
+    .orderBy(desc(sessions.createdAt))
+    .limit(limit);
+}
+
+export async function createSession(data: InsertSession): Promise<number> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const result = await db.insert(sessions).values(data);
+  return Number(result[0].insertId);
+}
+
+// Update child stats after a session
+export async function updateChildAfterSession(
+  childId: number,
+  sessionData: {
+    starsEarned: number;
+    totalProblems: number;
+    correctAnswers: number;
+    crossingTenCorrect: number;
+    crossingTenTotal: number;
+    date: string;
+    accuracy: number;
+  }
+): Promise<void> {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  
+  const child = await getChildById(childId);
+  if (!child) throw new Error("Child not found");
+  
+  // Calculate new streak
+  const today = sessionData.date;
+  const yesterday = getYesterdayDate(today);
+  let newStreak = 1;
+  
+  if (child.lastSessionDate === today) {
+    // Already played today, keep current streak
+    newStreak = child.currentStreak;
+  } else if (child.lastSessionDate === yesterday) {
+    // Played yesterday, increment streak
+    newStreak = child.currentStreak + 1;
+  }
+  // Otherwise, streak resets to 1
+  
+  const newLongestStreak = Math.max(child.longestStreak, newStreak);
+  
+  // Calculate new difficulty level based on accuracy
+  let newDifficulty = child.difficultyLevel;
+  if (sessionData.accuracy >= 85 && child.difficultyLevel < 5) {
+    newDifficulty = child.difficultyLevel + 1;
+  } else if (sessionData.accuracy < 50 && child.difficultyLevel > 1) {
+    newDifficulty = child.difficultyLevel - 1;
+  }
+  
+  // Check for new badges
+  const currentBadges: string[] = child.badges ? JSON.parse(child.badges) : [];
+  const newTotalSessions = child.totalSessions + 1;
+  const newTotalStars = child.totalStars + sessionData.starsEarned;
+  
+  // Badge logic
+  if (!currentBadges.includes("first_star") && newTotalStars >= 1) {
+    currentBadges.push("first_star");
+  }
+  if (!currentBadges.includes("math_explorer") && newTotalSessions >= 5) {
+    currentBadges.push("math_explorer");
+  }
+  if (!currentBadges.includes("streak_master") && newStreak >= 7) {
+    currentBadges.push("streak_master");
+  }
+  if (!currentBadges.includes("problem_solver") && (child.totalProblems + sessionData.totalProblems) >= 100) {
+    currentBadges.push("problem_solver");
+  }
+  if (!currentBadges.includes("accuracy_ace") && sessionData.accuracy === 100 && sessionData.totalProblems >= 10) {
+    currentBadges.push("accuracy_ace");
+  }
+  if (!currentBadges.includes("star_collector") && newTotalStars >= 50) {
+    currentBadges.push("star_collector");
+  }
+  
+  await db.update(children).set({
+    totalStars: newTotalStars,
+    totalSessions: newTotalSessions,
+    totalProblems: child.totalProblems + sessionData.totalProblems,
+    totalCorrect: child.totalCorrect + sessionData.correctAnswers,
+    currentStreak: newStreak,
+    longestStreak: newLongestStreak,
+    lastSessionDate: today,
+    crossingTenCorrect: child.crossingTenCorrect + sessionData.crossingTenCorrect,
+    crossingTenTotal: child.crossingTenTotal + sessionData.crossingTenTotal,
+    difficultyLevel: newDifficulty,
+    badges: JSON.stringify(currentBadges),
+  }).where(eq(children.id, childId));
+}
+
+function getYesterdayDate(todayStr: string): string {
+  const today = new Date(todayStr);
+  today.setDate(today.getDate() - 1);
+  return today.toISOString().split("T")[0];
+}
