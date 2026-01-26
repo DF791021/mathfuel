@@ -34,7 +34,7 @@ type StudentData = {
 
 export default function StudentHomeScreen() {
   const colors = useColors();
-  const { progress } = useGame();
+  const { progress, setCurrentChild } = useGame();
   const [student, setStudent] = useState<StudentData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isPressed, setIsPressed] = useState(false);
@@ -148,12 +148,16 @@ export default function StudentHomeScreen() {
         return;
       }
 
+      // Set the current child ID in game context for server sync
+      const childId = parseInt(studentId, 10);
+      setCurrentChild(childId);
+
       const savedData = await AsyncStorage.getItem(`mathfuel_student_data_${studentId}`);
       if (savedData) {
         setStudent(JSON.parse(savedData));
       } else {
         const defaultStudent: StudentData = {
-          id: parseInt(studentId, 10),
+          id: childId,
           firstName: "Student",
           avatar: "🦊",
           totalStars: progress.totalStars,
@@ -188,6 +192,7 @@ export default function StudentHomeScreen() {
     if (Platform.OS !== "web") {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
+    setCurrentChild(null); // Clear current child from context
     await AsyncStorage.removeItem(STUDENT_KEY);
     router.replace("/student" as any);
   };

@@ -83,3 +83,10 @@
 - [x] Consistent spacing and visual rhythm
 - [x] Professional iconography
 - [x] Celebration animations for achievements
+
+## Session Database Connection
+- [x] Update practice screen to save session data to server after completion
+- [x] Update child detail screen to fetch real session history from database
+- [x] Display session stats (accuracy, problems solved, time) on child detail
+- [x] Show crossing-ten accuracy from real session data
+- [x] Calculate and display progress trends from session history
