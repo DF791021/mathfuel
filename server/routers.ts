@@ -7,6 +7,8 @@ import { studentRouter } from "./routers/student";
 import { parentRouter } from "./routers/parent";
 import { aiTutorRouter } from "./routers/aiTutor";
 import { customAuthRouter } from "./routers/customAuth";
+import { missionRouter } from "./routers/mission";
+import { discoveryWorkshopRouter } from "./routers/discoveryWorkshop";
 
 export const appRouter = router({
   system: systemRouter,
@@ -17,6 +19,8 @@ export const appRouter = router({
   parent: parentRouter,
   aiTutor: aiTutorRouter,
   auth: customAuthRouter,
+  mission: missionRouter,
+  discoveryWorkshop: discoveryWorkshopRouter,
 });
 
 export type AppRouter = typeof appRouter;

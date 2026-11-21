@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { MissionLaunchCards } from "@/components/MissionProgress";
+import { WorkshopEntrance } from "@/components/WorkshopEntrance";
 
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -355,6 +357,8 @@ export default function StudentDashboard() {
           </div>
         </motion.div>
 
+        {user?.userType === "student" && <MissionLaunchCards />}
+
         {/* Stats Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
           <motion.div variants={fadeUp} initial="hidden" animate="visible" custom={1}>
@@ -405,6 +409,7 @@ export default function StudentDashboard() {
             ))}
           </div>
         </motion.div>
+        <div className="pt-3 text-center"><WorkshopEntrance /></div>
       </main>
     </div>
   );
