@@ -4,6 +4,7 @@ import { BookOpen, CheckCircle2, Cloud, Flame, Lightbulb, Rocket, ShieldCheck, S
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { MissionLaunchCards, MissionStats } from "@/components/MissionProgress";
+import { WorkshopEntrance } from "@/components/WorkshopEntrance";
 import { MISSION_DEFINITIONS, type MissionAction, type MissionId, type MissionView } from "@shared/missions";
 import "@/components/missions.css";
 
@@ -146,6 +147,7 @@ function MissionSession({ missionId }: { missionId: MissionId }) {
           <Link className="mf-button mf-button-quiet" href="/missions">All missions</Link>
         </div>
         {start.error && <div className="mf-error" role="alert"><p>Your next mission could not be opened. Your completed result is still saved. Try again when your connection is ready.</p></div>}
+        <div className="mt-5 border-t border-slate-200 pt-3"><WorkshopEntrance /></div>
       </section>
       <MissionNotes missionId={missionId} completed />
     </div>

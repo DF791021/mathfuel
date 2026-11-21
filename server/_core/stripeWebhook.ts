@@ -6,7 +6,8 @@ import Stripe from "stripe";
 import { Request, Response } from "express";
 import { notifyOwner } from "./notification";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
 
 export async function handleStripeWebhook(req: Request, res: Response) {
@@ -17,9 +18,8 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     return res.status(400).json({ error: "Missing signature" });
   }
 
-  if (!webhookSecret) {
-    console.error("Missing STRIPE_WEBHOOK_SECRET");
-    return res.status(500).json({ error: "Webhook secret not configured" });
+  if (!stripe || !webhookSecret) {
+    return res.status(503).json({ error: "Payment webhooks are not configured" });
   }
 
   let event: Stripe.Event;

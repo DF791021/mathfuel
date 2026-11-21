@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "target": "ES2022"
+  },
+  "include": ["scripts/*mysql*.ts", "scripts/mysql-verification/**/*.ts"],
+  "exclude": ["node_modules", "build", "dist", "**/*.test.ts"]
+}

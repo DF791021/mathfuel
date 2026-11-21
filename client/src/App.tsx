@@ -13,6 +13,7 @@ const Signup = React.lazy(() => import("./pages/Signup"));
 const StudentDashboard = React.lazy(() => import("./pages/StudentDashboard"));
 const PracticeSession = React.lazy(() => import("./pages/PracticeSession"));
 const MissionPractice = React.lazy(() => import("./pages/MissionPractice"));
+const DiscoveryWorkshop = React.lazy(() => import("./pages/DiscoveryWorkshop"));
 const ParentDashboard = React.lazy(() => import("./pages/ParentDashboard"));
 const SkillMap = React.lazy(() => import("./pages/SkillMap"));
 const ForgotPassword = React.lazy(() => import("./pages/ForgotPassword"));
@@ -30,6 +31,7 @@ function Router() {
         <Route path="/dashboard" component={StudentDashboard} />
         <Route path="/missions" component={MissionPractice} />
         <Route path="/missions/:missionId" component={MissionPractice} />
+        <Route path="/workshop" component={DiscoveryWorkshop} />
         <Route path="/practice" component={PracticeSession} />
         <Route path="/practice/:skillId" component={PracticeSession} />
         <Route path="/skills" component={SkillMap} />

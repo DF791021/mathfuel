@@ -53,9 +53,13 @@ This branch adds Make Ten and Bridge Through Ten at `/missions`, resumable serve
 
 See [the ten-mission review notes](docs/ten-missions-review.md) for schema changes, readiness assumptions, authentication repairs, verification evidence, and the remaining staging checks. This source change does not establish which version is deployed at MathFuel.org.
 
+For a guided local setup, SQL exercises, and bringing saved mission data into Excel, use [the MySQL and Excel lab](docs/mysql-excel-lab.md). It distinguishes the five current migrations from the legacy SQL files and uses separate development and test databases.
+
+The optional `/workshop` discovery path uses two learning clues to open ten lessons about the interface, server, meaningful records, SQL, Excel, and applied maths. All database examples are captured fictional lab records. The [T-shirt shop lesson blueprint](docs/applied-math-shop-lesson.md) extends those ideas to counting, revenue, contribution, customer choices, and evidence; the shop is a proposed classroom simulation, not a live store.
+
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) (v18+)
+- [Node.js](https://nodejs.org/) (22.12 or later)
 - [pnpm](https://pnpm.io/) (v10+)
 - MySQL database
 
@@ -70,7 +74,7 @@ cp .env.example .env
 # Edit .env with your DATABASE_URL and other required values
 
 # Run database migrations
-pnpm db:push
+pnpm db:migrate
 ```
 
 ### Development

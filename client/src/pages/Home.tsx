@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { WorkshopEntrance } from "@/components/WorkshopEntrance";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link, useLocation } from "wouter";
@@ -386,6 +387,7 @@ export default function Home() {
           <p className="text-xs sm:text-sm text-muted-foreground text-center">
             Adaptive math practice for young learners.
           </p>
+          <WorkshopEntrance />
         </div>
       </footer>
     </div>

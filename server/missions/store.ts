@@ -47,6 +47,16 @@ export async function actOnMissionRun(studentId: number, input: MissionAction): 
       completedAt: next.completedAt,
       activeKey: next.status === "completed" ? null : `${studentId}:${next.missionId}`,
     }).where(eq(missionRuns.id, input.runId));
+    if (next.status === "completed") {
+      // MySQL normalizes TIMESTAMP precision when storing completedAt. Return
+      // that durable value so the first response, reload, parent view and
+      // idempotent completion retry all describe the exact same result.
+      const [saved] = await transaction.select().from(missionRuns)
+        .where(and(eq(missionRuns.id, input.runId), eq(missionRuns.studentId, studentId)))
+        .limit(1);
+      if (!saved) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "The completed mission could not be read back." });
+      return saved;
+    }
     return next;
   });
 }

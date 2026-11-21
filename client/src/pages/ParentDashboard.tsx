@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
 import { ParentMissionProgress } from "@/components/MissionProgress";
+import { WorkshopEntrance } from "@/components/WorkshopEntrance";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -110,6 +111,7 @@ export default function ParentDashboard() {
         )}
 
         {(!children || children.length === 0) && <SelfProgressView />}
+        <div className="pt-3 text-center"><WorkshopEntrance /></div>
       </main>
     </div>
   );
