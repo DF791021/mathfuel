@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { trpc } from "@/lib/trpc";
+import { ParentMissionProgress } from "@/components/MissionProgress";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -294,6 +295,8 @@ function ChildOverview({ child, progress, isLoading }: { child: any; progress: a
           <StatCard icon={<Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500" />} label="Best Streak" value={`${child.longestStreak} days`} color="bg-yellow-50 border-yellow-200" />
         </div>
       </motion.div>
+
+      <ParentMissionProgress key={child.id} childId={child.id} />
 
       {/* Detailed Progress */}
       {isLoading ? (

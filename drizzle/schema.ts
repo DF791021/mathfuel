@@ -127,6 +127,21 @@ export const practiceSessions = mysqlTable("practiceSessions", {
 export type PracticeSession = typeof practiceSessions.$inferSelect;
 export type InsertPracticeSession = typeof practiceSessions.$inferInsert;
 
+/** Server-owned, versioned practice missions. A nullable unique active key allows
+ * one resumable run per learner/mission and any number of completed runs. */
+export const missionRuns = mysqlTable("missionRuns", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  studentId: int("studentId").notNull(),
+  missionId: mysqlEnum("missionId", ["make-ten", "bridge-ten"]).notNull(),
+  activeKey: varchar("activeKey", { length: 64 }).unique(),
+  contentVersion: int("contentVersion").notNull().default(1),
+  revision: int("revision").notNull().default(0),
+  status: mysqlEnum("status", ["in_progress", "completed"]).notNull().default("in_progress"),
+  state: json("state").$type<import("../server/missions/engine").MissionState>().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+});
+
 /**
  * Individual problem attempts within a session
  */

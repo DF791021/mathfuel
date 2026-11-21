@@ -1,8 +1,9 @@
-import { protectedProcedure, router } from "../_core/trpc";
+import { adminProcedure, protectedProcedure, router } from "../_core/trpc";
 import { z } from "zod";
 import * as db from "../db";
 import { TRPCError } from "@trpc/server";
 import crypto from "crypto";
+import { getMissionOverview } from "../missions/overview";
 
 function generateInviteCode(): string {
   // Generate a 6-character alphanumeric code (easy to type for kids/parents)
@@ -147,7 +148,7 @@ export const parentRouter = router({
     }),
 
   // ── Legacy: Link a child directly by ID (admin use) ──
-  linkChild: protectedProcedure
+  linkChild: adminProcedure
     .input(
       z.object({
         childId: z.number().int(),
@@ -213,6 +214,19 @@ export const parentRouter = router({
   }),
 
   // ── Get detailed progress for a specific child ──
+  getMissionProgress: protectedProcedure
+    .input(z.object({ childId: z.number().int().positive() }))
+    .query(async ({ ctx, input }) => {
+      if (ctx.user.userType !== "parent") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Only a linked parent can view these mission results." });
+      }
+      const links = await db.getParentStudents(ctx.user.id);
+      if (!links.some(link => link.studentId === input.childId)) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "You are not linked to this student." });
+      }
+      return getMissionOverview(input.childId, false);
+    }),
+
   getChildProgress: protectedProcedure
     .input(z.object({ childId: z.number().int() }))
     .query(async ({ ctx, input }) => {

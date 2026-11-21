@@ -47,6 +47,12 @@ An adaptive math practice platform for Grade 1–2 students, featuring AI-powere
 
 ## Getting Started
 
+### Saved ten missions (review build)
+
+This branch adds Make Ten and Bridge Through Ten at `/missions`, resumable server-saved steps, and a linked-parent mission flight log. Correctness, first tries, hints, and practice recommendations are computed on the server. A new database migration is required before enabling these routes.
+
+See [the ten-mission review notes](docs/ten-missions-review.md) for schema changes, readiness assumptions, authentication repairs, verification evidence, and the remaining staging checks. This source change does not establish which version is deployed at MathFuel.org.
+
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) (v18+)
