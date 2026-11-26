@@ -1,15 +1,17 @@
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
-import { getSessionCookieOptions } from "../_core/cookies";
-import { ENV } from "../_core/env";
-import * as db from "../db";
-import { users, passwordResetTokens } from "../../drizzle/schema";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc.js";
+import { COOKIE_NAME, ONE_YEAR_MS } from "../../shared/const.js";
+import { getSessionCookieOptions } from "../_core/cookies.js";
+import { ENV } from "../_core/env.js";
+import * as db from "../db.js";
+import { users, passwordResetTokens } from "../../drizzle/schema.js";
 import { eq, and, isNull, gt } from "drizzle-orm";
 import { randomUUID, randomBytes } from "crypto";
-import { sendEmail } from "../_core/email";
+import { sendEmail } from "../_core/email.js";
+import { TRPCError } from "@trpc/server";
+import type { User } from "../../drizzle/schema.js";
 
 const SALT_ROUNDS = 12;
 const RESET_TOKEN_EXPIRY_MS = 60 * 60 * 1000; // 1 hour
@@ -35,13 +37,19 @@ async function createJWT(openId: string, name: string): Promise<string> {
 
 async function getUserByEmail(email: string) {
   const dbConn = await db.getDb();
-  if (!dbConn) return null;
+  if (!dbConn) throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message: "Account services are unavailable. Please try again." });
   const result = await dbConn
     .select()
     .from(users)
     .where(eq(users.email, email))
     .limit(1);
   return result.length > 0 ? result[0] : null;
+}
+
+function publicUser(user: User | null | undefined) {
+  if (!user) return null;
+  const { passwordHash: _passwordHash, ...profile } = user;
+  return profile;
 }
 
 function generateResetToken(): string {
@@ -91,39 +99,9 @@ export const customAuthRouter = router({
     .mutation(async ({ ctx, input }) => {
       const existing = await getUserByEmail(input.email);
       if (existing) {
-        // If account exists but has no password (OAuth-created), let them set one
-        if (!existing.passwordHash) {
-          const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
-          const dbConn = await db.getDb();
-          if (dbConn) {
-            await dbConn
-              .update(users)
-              .set({
-                passwordHash,
-                loginMethod: "email",
-                userType: input.userType,
-                ...(input.gradeLevel ? { gradeLevel: input.gradeLevel } : {}),
-              })
-              .where(eq(users.id, existing.id));
-          }
-
-          await db.upsertUser({
-            openId: existing.openId,
-            lastSignedIn: new Date(),
-          });
-
-          const token = await createJWT(existing.openId, existing.name || input.name);
-          const cookieOptions = getSessionCookieOptions(ctx.req);
-          ctx.res.cookie(COOKIE_NAME, token, {
-            ...cookieOptions,
-            maxAge: ONE_YEAR_MS,
-          });
-
-          const user = await db.getUserByOpenId(existing.openId);
-          return { success: true, user };
-        }
-
-        throw new Error("An account with this email already exists. Please log in instead.");
+        // Knowing an OAuth account's email is not proof of ownership. The
+        // emailed recovery flow is the only public route to set its password.
+        throw new TRPCError({ code: "CONFLICT", message: "An account with this email already exists. Log in or use Forgot Password." });
       }
 
       const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
@@ -160,7 +138,7 @@ export const customAuthRouter = router({
       });
 
       const user = await db.getUserByOpenId(openId);
-      return { success: true, user };
+      return { success: true, user: publicUser(user) };
     }),
 
   login: publicProcedure
@@ -180,7 +158,7 @@ export const customAuthRouter = router({
       // guide them to set one via the signup page or forgot password
       if (!user.passwordHash) {
         throw new Error(
-          "This account doesn't have a password yet. Please use 'Forgot Password' to set one, or sign up again with the same email to set a password."
+          "This account doesn't have a password yet. Please use 'Forgot Password' to verify your email and set one."
         );
       }
 
@@ -210,7 +188,7 @@ export const customAuthRouter = router({
         maxAge: ONE_YEAR_MS,
       });
 
-      return { success: true, user };
+      return { success: true, user: publicUser(user) };
     }),
 
   // ── Forgot Password ──
@@ -240,14 +218,16 @@ export const customAuthRouter = router({
       });
 
       // Build reset URL
-      const origin = ctx.req.headers.origin || ctx.req.headers.referer?.replace(/\/$/, "") || "https://mathfuel.org";
-      const resetUrl = `${origin}/reset-password?token=${token}`;
+      // Origin and Referer are requester-controlled. Recovery tokens must only
+      // be sent to our configured application, never a caller's chosen host.
+      const resetUrl = new URL("/reset-password", process.env.PUBLIC_APP_URL || "https://mathfuel.org");
+      resetUrl.searchParams.set("token", token);
 
       // Send email
       await sendEmail({
         to: input.email,
         subject: "Reset your MathFuel password",
-        html: buildResetEmailHtml(user.name || "", resetUrl),
+        html: buildResetEmailHtml(user.name || "", resetUrl.toString()),
       });
 
       console.log(`[Auth] Password reset requested for user ${user.id}`);
@@ -333,7 +313,7 @@ export const customAuthRouter = router({
       return { success: true, message: "Password has been reset. You can now log in with your new password." };
     }),
 
-  me: publicProcedure.query((opts) => opts.ctx.user),
+  me: publicProcedure.query((opts) => publicUser(opts.ctx.user)),
 
   logout: publicProcedure.mutation(({ ctx }) => {
     const cookieOptions = getSessionCookieOptions(ctx.req);

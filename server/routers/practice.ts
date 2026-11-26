@@ -1,6 +1,6 @@
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, router } from "../_core/trpc.js";
 import { z } from "zod";
-import * as db from "../db";
+import * as db from "../db.js";
 
 /**
  * Deterministic answer checking - no AI dependency for correctness

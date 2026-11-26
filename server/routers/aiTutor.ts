@@ -1,7 +1,7 @@
-import { protectedProcedure, router } from "../_core/trpc";
-import { invokeLLM } from "../_core/llm";
+import { protectedProcedure, router } from "../_core/trpc.js";
+import { invokeLLM } from "../_core/llm.js";
 import { z } from "zod";
-import * as db from "../db";
+import * as db from "../db.js";
 
 /**
  * AI Tutor Router

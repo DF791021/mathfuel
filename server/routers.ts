@@ -1,12 +1,12 @@
-import { systemRouter } from "./_core/systemRouter";
-import { router } from "./_core/trpc";
-import { adminSettingsRouter } from "./routers/adminSettings";
-import { mathContentRouter } from "./routers/mathContent";
-import { practiceRouter } from "./routers/practice";
-import { studentRouter } from "./routers/student";
-import { parentRouter } from "./routers/parent";
-import { aiTutorRouter } from "./routers/aiTutor";
-import { customAuthRouter } from "./routers/customAuth";
+import { systemRouter } from "./_core/systemRouter.js";
+import { router } from "./_core/trpc.js";
+import { adminSettingsRouter } from "./routers/adminSettings.js";
+import { mathContentRouter } from "./routers/mathContent.js";
+import { practiceRouter } from "./routers/practice.js";
+import { studentRouter } from "./routers/student.js";
+import { parentRouter } from "./routers/parent.js";
+import { aiTutorRouter } from "./routers/aiTutor.js";
+import { customAuthRouter } from "./routers/customAuth.js";
 
 export const appRouter = router({
   system: systemRouter,
