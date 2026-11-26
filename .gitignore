@@ -105,3 +105,7 @@ temp/
 *.db
 *.sqlite
 *.sqlite3
+
+# Vercel and local Python tooling
+.vercel/
+__pycache__/

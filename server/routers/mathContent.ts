@@ -1,6 +1,6 @@
-import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { publicProcedure, protectedProcedure, router } from "../_core/trpc.js";
 import { z } from "zod";
-import * as db from "../db";
+import * as db from "../db.js";
 
 export const mathContentRouter = router({
   // Get all domains for a grade level

@@ -1,6 +1,6 @@
-import { protectedProcedure, router } from "../_core/trpc";
+import { adminProcedure, protectedProcedure, router } from "../_core/trpc.js";
 import { z } from "zod";
-import * as db from "../db";
+import * as db from "../db.js";
 import { TRPCError } from "@trpc/server";
 import crypto from "crypto";
 
@@ -147,7 +147,7 @@ export const parentRouter = router({
     }),
 
   // ── Legacy: Link a child directly by ID (admin use) ──
-  linkChild: protectedProcedure
+  linkChild: adminProcedure
     .input(
       z.object({
         childId: z.number().int(),

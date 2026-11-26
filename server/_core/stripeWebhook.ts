@@ -4,10 +4,7 @@
  */
 import Stripe from "stripe";
 import { Request, Response } from "express";
-import { notifyOwner } from "./notification";
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
-const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET || "";
+import { notifyOwner } from "./notification.js";
 
 export async function handleStripeWebhook(req: Request, res: Response) {
   const signature = req.headers["stripe-signature"] as string;
@@ -17,17 +14,18 @@ export async function handleStripeWebhook(req: Request, res: Response) {
     return res.status(400).json({ error: "Missing signature" });
   }
 
-  if (!webhookSecret) {
-    console.error("Missing STRIPE_WEBHOOK_SECRET");
-    return res.status(500).json({ error: "Webhook secret not configured" });
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!stripeKey || !webhookSecret) {
+    return res.status(503).json({ error: "Stripe webhook is not configured" });
   }
 
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(req.body, signature, webhookSecret);
-  } catch (error) {
-    console.error("Webhook signature verification failed:", error);
+    event = new Stripe(stripeKey).webhooks.constructEvent(req.body, signature, webhookSecret);
+  } catch {
+    console.error("Stripe webhook signature verification failed");
     return res.status(400).json({ error: "Invalid signature" });
   }
 
